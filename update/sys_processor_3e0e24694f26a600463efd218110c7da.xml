@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<record_update table="sys_processor">
+    <sys_processor action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <class_name/>
+        <description>GQL (Glide Query Language) Processor</description>
+        <interactive>false</interactive>
+        <name>GQL</name>
+        <parameters/>
+        <params_endpoint/>
+        <path>proc</path>
+        <path_endpoint>x_64935_gql_proc</path_endpoint>
+        <require_csrf>false</require_csrf>
+        <roles/>
+        <script><![CDATA[/** 
+* GQL (Glide Query Language) Processor
+*
+* MIT License http://tldrlegal.com/l/mit
+* Copyright (c) 2016 John.Chun @snowaid.com
+*/
+
+(function process(g_request, g_response, g_processor) {
+
+	try {
+		//var params = g_request.getParameter('params') || {};  // handle Angular POST in JSON
+		//var gql = g_request.getParameter('gql') || params.gql;
+		//var format = g_request.getParameter('format') || params.format;
+		var gql = g_request.getParameter('gql');
+		var format = g_request.getParameter('format');
+		var result = new GQL().query(gql, format);
+
+		/** 
+		 * disable page caching to avoid stale result
+		 * g_response.setHeader() overwrites existing header
+		 * g_response.addHeader() unavailable in scoped GlideServletResponse
+		 * http://wiki.servicenow.com?title=Scoped_GlideServletResponse_API_Reference
+		 * usually need all 3 to be sure, but for now set only 'cache-control'
+		 */  
+		g_response.setHeader('cache-control', 'no-cache');
+		//g_response.addHeader('pragma', 'no-cache');
+		//g_response.addHeader('expires', '-1');
+
+		if (/CSV/i.test(format)) {
+			var filename = result.query && result.query.table || 'gql';
+			g_response.setHeader('Content-Disposition', 'attachment;filename=' + filename + '.csv');
+			g_processor.writeOutput('text/csv', getCSV());
+		}
+		else if (/HTML/i.test(format)) g_processor.writeOutput('text/html', getHTML());
+		else g_processor.writeJSON(result);
+	} catch (e) { g_processor.writeOutput('text/plain', 'ERROR: ' + e + '\r' + e.stack); }
+
+	function getCSV() {
+
+		var columns = [], rows = [];
+		result.labels.forEach(function(label) { columns.push(escapeCSV(label)); });
+		rows.push(columns.join(','));
+		for (var i = 0; i < result.records.length; i++) {
+			columns = [];
+			result.records[i].forEach(function(column) { columns.push(escapeCSV(column)); });
+			rows.push(columns.join(','));
+		}
+		return rows.join('\r\n');
+
+		/** 
+		 * Takes raw field value and returns CSV escaped value 
+		 * based on RFC 4180 Common Format and MIME Type for CSV Files
+		 * October 2005 http://tools.ietf.org/html/rfc4180 
+		 * 
+		 * @param {string} raw - raw field value 
+		 * @return {string} escaped CSV field value, if applicable per RFC 4180 
+		 */  
+		function escapeCSV(raw) {
+			var out = (raw + '').replace(/"/g,'""');  // escape all double quotes  
+			if (/[\r\n",]/.test(out)) out = '"' + out + '"';  // if it has special characters, enclose in double quotes
+			return out;
+		}  
+	}
+	
+	function getHTML() {
+
+		var columns = [], rows = ['<table><thead><tr><th>'];
+		result.labels.forEach(function(label) { columns.push(escapeHTML(label)); });
+		rows.push(columns.join('</th><th>'), '</th></tr></thead><tbody>');
+		for (var i = 0; i < result.records.length; i++) {
+			columns = [];
+			result.records[i].forEach(function(column) { columns.push(escapeHTML(column)); });
+			rows.push('<tr><td>', columns.join('</td><td>'), '</td></tr>');
+		}
+		rows.push('</tbody></table>');
+		return rows.join('');
+
+		function escapeHTML(raw) {  // escape reserved HTML characters
+			var MAP = { '&':'&amp;','<':'&lt;','>':'&gt;'};
+			return (raw + '').replace(/[&<>]/g, function(c) { return MAP[c]; });
+		}
+	}
+})(g_request, g_response, g_processor);]]></script>
+        <sys_class_name>sys_processor</sys_class_name>
+        <sys_created_by>john.chun</sys_created_by>
+        <sys_created_on>2016-10-18 11:57:00</sys_created_on>
+        <sys_customer_update>true</sys_customer_update>
+        <sys_id>3e0e24694f26a600463efd218110c7da</sys_id>
+        <sys_mod_count>121</sys_mod_count>
+        <sys_name>GQL</sys_name>
+        <sys_package display_value="gql" source="x_64935_gql">a4d8ddd54f62a600463efd218110c731</sys_package>
+        <sys_policy/>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="gql">a4d8ddd54f62a600463efd218110c731</sys_scope>
+        <sys_update_name>sys_processor_3e0e24694f26a600463efd218110c7da</sys_update_name>
+        <sys_updated_by>john.chun</sys_updated_by>
+        <sys_updated_on>2016-10-27 14:25:02</sys_updated_on>
+        <type>script</type>
+    </sys_processor>
+</record_update>

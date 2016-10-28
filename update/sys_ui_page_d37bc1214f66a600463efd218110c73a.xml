@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<record_update table="sys_ui_page">
+    <sys_ui_page action="INSERT_OR_UPDATE">
+        <category>general</category>
+        <client_script><![CDATA[/**
+* GQL (Glide Query Language) Pad
+*
+* MIT License http://tldrlegal.com/l/mit
+* Copyright (c) 2016 John.Chun @snowaid.com
+*/
+
+var app = angular.module('gqlpad', []);
+
+app.controller('EditorCtrl', ['$scope', '$http', '$sce', function($scope, $http, $sce) {
+
+	// set initial value
+	$scope.gql = 'SELECT  -- sample GQL statement\r  number [Number]\r  , short_description [Title]\r  , dv_state [State]\r  , caller_id.email [Caller Email]\r  , caller_id.manager.email [Manager Email]\r  , dv_cmdb_ci [CI]\r  , cmdb_ci\rFROM incident\rWHERE active=true^priority<2^EQ^ORDERBYpriority^ORDERBYDESCnumber\rLIMIT 5,10';
+	
+	$scope.formats = [
+      {name:'CSV' },
+      {name:'HTML'},
+      {name:'JSAN'},
+      {name:'JSON'},
+    ];
+	$scope.format = $scope.formats[1];  // default to HTML
+
+	$scope.run = function() {
+		var timer = Date.now();
+		$scope.timer = '';
+		$scope.result = '';
+		var params = { gql:$scope.gql, format:$scope.format.name, now:Date.now() };  // add now() to prevent caching
+		$http.get('/x_64935_gql_proc.do', { params: params }).then(function(response) {
+
+			var data = response.data;
+			
+			$scope.result = $sce.trustAsHtml(typeof data == 'object' ? JSON.stringify(data) : data);  // stringify to show JSON on page
+			$scope.timer  = 'took ' + ((Date.now() - timer) / 1e3) + ' seconds';
+		});
+	}
+}]);]]></client_script>
+        <description>GQL (Glide Query Language) Pad</description>
+        <direct>true</direct>
+        <endpoint>x_64935_gql_pad.do</endpoint>
+        <html><![CDATA[<style>
+body { margin-bottom:20pt; }
+
+label { margin-right: 9px; }
+
+table { font:9pt Arial; border-collapse:collapse; }
+th,td { padding:3px; border:1px solid #aaa; empty-cells:show; vertical-align:top; }
+th { font-weight:bold; text-align:left; background-color:#eee; }
+tr:nth-child(even) { background-color:#fafafa; }
+tr:hover { background-color:lightyellow; }
+tfoot td { border:0; }
+	
+footer { color:gray; font-size:9pt; text-align:center; position:fixed; bottom:0; width:100%; padding:5pt 0 3pt 0; background-color:white; }
+</style>
+
+<body ng-app="gqlpad">
+	<h3>GQL (Glide Query Language) Pad</h3>
+	<div ng-controller="EditorCtrl">
+		<textarea ng-model="gql" rows="20" style="font:9pt Consolas; width:100%;"></textarea>
+		<br/>
+		<label>Output format:
+			<select ng-model="format" ng-options="format.name for format in formats"></select>
+		</label> 
+		<button ng-click="run()" style="width:80px;" accesskey="r"><u>R</u>un</button>
+		<span ng-bind="timer" style="color:gray; font:9pt Consolas; margin-left:30px;"></span>
+		<br/>
+		<div ng-bind-html="status" style="font:9pt Consolas; background-color:lightyellow;"></div>
+		<div ng-bind-html="result" style="font:9pt Consolas; white-space: pre-wrap;"></div>
+	</div>
+
+	<footer>MIT License Copyright © 2016 John.Chun @snowaid.com</footer>
+</body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>]]></html>
+        <name>pad</name>
+        <processing_script/>
+        <sys_class_name>sys_ui_page</sys_class_name>
+        <sys_created_by>john.chun</sys_created_by>
+        <sys_created_on>2016-10-18 13:52:56</sys_created_on>
+        <sys_customer_update>true</sys_customer_update>
+        <sys_id>d37bc1214f66a600463efd218110c73a</sys_id>
+        <sys_mod_count>130</sys_mod_count>
+        <sys_name>pad</sys_name>
+        <sys_package display_value="gql" source="x_64935_gql">a4d8ddd54f62a600463efd218110c731</sys_package>
+        <sys_policy/>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="gql">a4d8ddd54f62a600463efd218110c731</sys_scope>
+        <sys_update_name>sys_ui_page_d37bc1214f66a600463efd218110c73a</sys_update_name>
+        <sys_updated_by>john.chun</sys_updated_by>
+        <sys_updated_on>2016-10-27 16:31:24</sys_updated_on>
+    </sys_ui_page>
+</record_update>

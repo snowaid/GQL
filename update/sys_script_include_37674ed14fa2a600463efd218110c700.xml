@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>package_private</access>
+        <active>true</active>
+        <api_name>x_64935_gql.GQL</api_name>
+        <client_callable>false</client_callable>
+        <description>GQL (Glide Query Language) Class</description>
+        <name>GQL</name>
+        <script><![CDATA[/**
+* GQL (Glide Query Language) Class
+*
+* MIT License http://tldrlegal.com/l/mit
+* Copyright (c) 2016 John.Chun @snowaid.com
+*/
+
+var GQL = Class.create();
+GQL.prototype = {
+    initialize: function(format) {
+		this.format = format || 'JSAN';  // { JSAN | JSON }
+	},
+    type: 'GQL'
+};
+
+/**
+* Takes a GQL statement and returns the resultset in an array of records
+*
+* @param {string} gql - GQL statement
+* @return {object} resultset in an array of records
+*/
+
+GQL.prototype.query = function(gql, format) {
+
+	// prep params
+	gql = gql.replace(/\s*--.*/g, '');  // remove comments
+	format = format || this.format;
+	var isJSON = /JSON/i.test(format);
+	
+	// parse gql
+	var rxParser = /SELECT\s*([^]+?)\s*FROM\s*(.+?)\s*(?:WHERE\s*([^]+?(?=\s*LIMIT)|[^]+?)\s*)?(?:LIMIT\s*([,\d\s]+?)\s*)?$/;
+	var matches = rxParser.exec(gql);
+	var columns = matches[1] || '';        // SELECT column_list
+	var table = matches[2] || '';          // FROM table name
+	var encodedQuery = matches[3] || '';   // WHERE encoded_query_string
+	var limit = matches[4] || '';          // LIMIT [offset,] row_count
+	var query = { full: gql, columns: columns, table: table, encodedQuery: encodedQuery, limit: limit };  // add to result
+	var offset = 0;
+	if (limit) {  // parse offset, row_count
+		limit = limit.split(',');
+		if (limit.length > 1) offset = parseInt(limit[0], 10) || 0;
+		limit = parseInt(limit[limit.length > 1 ? 1 : 0], 10) || 0;
+	}
+	
+	// parse column_list
+	columns = columns.split(/\s*,\s*/);  // split column_list column_1, column_2 [column_2_heading], column_3
+	var fields = [], labels = [];
+	for (var i = 0; i < columns.length; i++) {  // parse column heading
+		matches = /([.\w]+)\s*(?:\[(.+)\])?/.exec(columns[i]);
+		//columns[i] = { field: matches[1], label: matches[2] || matches[1] };  // if no label, use field name
+		fields.push(matches[1]);
+		labels.push(matches[2] || matches[1]);  // if no label, use field name
+	}
+	
+	// run query & retrieve data
+	var records = [];  // array of rows
+	var gr = new GlideRecord(table);
+	if (encodedQuery) gr.addEncodedQuery(encodedQuery);
+	if (offset) gr.chooseWindow(offset, offset + limit);
+	else if (limit) gr.setLimit(limit);
+	gr.query();
+	while (gr.next()) records.push(getRow());
+	
+	return { fields: fields, labels: labels, query: query, records: records };
+	
+	function getRow() {
+		
+		var row = isJSON ? {} : [];
+		for (var i = 0; i < fields.length; i++) {
+			var field = fields[i], isDV = /(^|\.)dv_/.test(field);
+			var value = isDV ? gr.getDisplayValue(field.replace('dv_', '')) || '' : gr.getElement(field).toString();
+			isJSON ? row[labels[i]] = value : row.push(value);  // default to JSAN
+		}
+		return row;
+	}
+};
+
+]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>john.chun</sys_created_by>
+        <sys_created_on>2016-10-17 23:35:12</sys_created_on>
+        <sys_customer_update>true</sys_customer_update>
+        <sys_id>37674ed14fa2a600463efd218110c700</sys_id>
+        <sys_mod_count>75</sys_mod_count>
+        <sys_name>GQL</sys_name>
+        <sys_package display_value="gql" source="x_64935_gql">a4d8ddd54f62a600463efd218110c731</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+        <sys_scope display_value="gql">a4d8ddd54f62a600463efd218110c731</sys_scope>
+        <sys_update_name>sys_script_include_37674ed14fa2a600463efd218110c700</sys_update_name>
+        <sys_updated_by>john.chun</sys_updated_by>
+        <sys_updated_on>2016-10-27 14:25:37</sys_updated_on>
+    </sys_script_include>
+</record_update>
